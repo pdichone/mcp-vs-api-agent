@@ -42,7 +42,7 @@ python bench.py                 # all five configs, 3 runs each, writes results/
 
 ## Results
 
-See `results/summary.md` for my numbers (model, date, and versions are in its first line). Yours will drift: issue counts change, GitHub's server changes its tools, and models change. That's the point of shipping the bench instead of a screenshot.
+See `results/summary.md` for my numbers. Its first line names the model, the repo, and the number of runs. They were measured on 2026-10-27 with `anthropic` 2.3.0, effort `medium`, and GitHub's remote MCP server as it was that day. Yours will drift: issue counts change, GitHub's server changes its tools, and models change. That's the point of shipping the bench instead of a screenshot.
 
 ## Notes
 
