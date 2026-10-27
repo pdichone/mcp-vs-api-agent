@@ -1,0 +1,17 @@
+I found 162 open issues labeled `bug`. Below are the 5 with the most comments, counted from the GitHub issues list (which leaves out pull requests). #2416 and #883 tie at 15, and the next issue (#156) has 14, so there's no tie at the cutoff.
+
+| # | Title | Comments | What users are reporting |
+|---|---|---|---|
+| **#423** | MCP SSE Server: Received request before initialization was complete | 25 | SSE servers crash with `RuntimeError` when a client sends requests on a stale session (after the server restarts or redeploys, or through gateways that send setup messages out of order). Recent comments say the server should reject stale sessions cleanly instead of crashing, and people are still using a monkeypatch that silences the error. |
+| **#1401** | ClientSession Error Handling | 25* | When a streamable-HTTP read times out, the error is quietly dropped (the default message handler throws it away), so `call_tool()` hangs forever instead of raising an error. Recent comments confirm this still happens on current `main` and show several contributors with fixes ready who are waiting for a maintainer to assign the issue. |
+| **#262** | cannot get response from `await session.call_tool()` | 16 | `call_tool()` hangs even though the server logs show the tool finished and sent its response. The latest comments point to sessions being used across different async tasks or threads, plus missed replies over stdio on long calls, and suggest a timeout plus a single task that owns the session as a workaround. |
+| **#2416** | AssertionError: Request already responded to — cancellation race in v1.27.0 | 15 | If a client cancels a request around the time the handler finishes, an `assert` fails and the whole server process dies, so every later call gets "Connection closed." A commenter showed this happens every time with synchronous tool handlers, and reports it is fixed in 2.3.0 but still breaks on 1.30.0, the latest 1.x release. |
+| **#883** | AssertionError: Unexpected message while using middlewares | 15 | Mounting the SSE app behind Starlette's `BaseHTTPMiddleware` crashes when a client disconnects, because the SDK sends the response header twice. A maintainer (Kludex) confirmed the bug is in this SDK, not Starlette, and said it must be fixed for v2. |
+
+\*The issue list says 25 comments for #1401, the issue page says 24, and I counted 25 when I pulled them all. A comment may have been deleted recently.
+
+**What I'd fix first: #2416.** It kills the whole server process during normal use (a user cancelling a request), it happens every time with synchronous handlers, and it's still broken in the latest 1.x release. The fix is a small, contributor-tested change to `respond()` and `cancel()` with regression tests already written in the thread, so it's very cheap for how much damage it causes.
+
+One caveat: maintainers rate #2416 as P2, while #1401 (silent hangs) is P1. If you go by their priorities, #1401 comes first. Either way, several of its fix PRs were closed automatically because nobody was assigned, so assigning one of the waiting contributors would unblock it. 
+
+[mcp-full+search] 42.9s · 1 API calls · 12 tool calls · in 105,934 (+0 cached) · out 3,709 · $0.498 · stop=end_turn

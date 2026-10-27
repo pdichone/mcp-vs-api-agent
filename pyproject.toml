@@ -1,0 +1,10 @@
+[project]
+name = "mcp-vs-api-agent"
+version = "0.1.0"
+description = "The same GitHub triage agent built two ways: hand-written API tools vs GitHub's MCP server, measured."
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=2.3.0",
+    "httpx>=0.28",
+    "python-dotenv>=1.0",
+]

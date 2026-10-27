@@ -1,0 +1,8 @@
+config                               tools     chars    tokens
+API: 3 hand-written tools                3     1,513       872
+MCP: allowlist, 3 tools                  3     5,956     2,502
+MCP: issues, read-only                   6     7,767     3,122
+MCP: default toolsets                   49    55,218    20,589
+MCP: every toolset                      99   117,073    43,223
+OpenAPI: issue endpoints only           60    99,692    35,766
+OpenAPI: whole spec                   1247 1,851,122  ~664,000 (estimated)

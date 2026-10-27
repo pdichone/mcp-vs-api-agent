@@ -1,0 +1,24 @@
+I pulled the open "bug" issues sorted by comment count (162 open in total), then read each issue and its most recent comments. The list endpoint only returns issues, so no pull requests are included.
+
+## Top 5 open "bug" issues by comment count
+
+**1. #423: MCP SSE Server: Received request before initialization was complete (25 comments, P2)**
+After a server restart or redeploy, SSE clients keep sending requests on their old session, and the server crashes with this RuntimeError. Recent comments add two other ways to hit it: proxies like supergateway that send their own `initialize` first, and sending `notifications/initialized` and `tools/list` back-to-back. The suggested workaround is to force clients to reconnect or move to stateless Streamable HTTP.
+
+**2. #1401: ClientSession Error Handling (25 comments in the list view, 24 on the issue itself, P1, good first issue)**
+When the transport fails, for example an `httpx.ReadTimeout` because `sse_read_timeout` is shorter than the tool's runtime, the default `ClientSession` message handler silently discards the error. Pending `call_tool` requests then hang instead of failing. September comments confirm this still happens on current `main` and that a fix branch with tests is ready, waiting only for a maintainer to assign the issue (5 earlier fix PRs were closed).
+
+**3. #262: cannot get response from await session.call_tool() (16 comments, P1)**
+`call_tool()` never returns even though the server logs show the tool finished and the response was sent. Reports point to long-running calls over stdio on macOS and Linux, and to session cleanup and task-boundary problems. Recent workarounds are wrapping calls in `asyncio.wait_for` and keeping the session inside a single task, while fix PR #1817 is pending.
+
+**4. #2416: AssertionError: Request already responded to — cancellation race in v1.27.0 (15 comments, P2, fix proposed)**
+If a client cancels a request after the handler has finished but before the response goes out, the server hits a bare `assert` and the whole process dies. Normal timeouts trigger this. The latest comments (Sept–Oct) say it still happens 3 out of 3 times on 1.30.0, the latest 1.x release, and doesn't happen on 2.3.0 (6 out of 6 runs). No open fix targets the v1.x branch, and downstream projects pinned to 1.x, like mcp-server-datahub, are affected.
+
+**5. #883: AssertionError: Unexpected message while using middlewares (15 comments, P1)**
+Mounting the SSE app in Starlette or FastAPI with any `BaseHTTPMiddleware` crashes when a client disconnects, because `sse_endpoint` sends a second `http.response.start`. One user notes the crash can show up afterwards as the #423 init error once the server restarts. A maintainer said "we need to solve this for V2," but both fix PRs (#2029, #3381) were closed.
+
+## What I'd fix first
+
+I'd fix #1401 first: it's P1, it causes silent, unbounded hangs in every client that uses `ClientSession`, and it plausibly explains some of the hangs in #262. It's also cheap to close, since the cause is well understood, it's marked as a good first issue, and a contributor already has a branch with regression tests waiting for assignment. 
+
+[mcp-issues] 32.7s · 1 API calls · 11 tool calls · in 47,581 (+0 cached) · out 3,223 · $0.255 · stop=end_turn

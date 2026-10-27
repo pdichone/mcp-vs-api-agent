@@ -1,0 +1,23 @@
+I'll start by listing the open "bug" issues, sorted by comment count.The top 5 are clear-cut: #2416 and #883 both have 15 comments, and the next issue has 14. Now I'll read each issue and its comments.Here are the 5 open "bug" issues with the most comments in modelcontextprotocol/python-sdk. The search returned only issues, no pull requests. Out of 162 open bug issues, these five have 15 or more comments, and the next one has 14, so there's no tie at the cutoff.
+
+| # | Title | Comments |
+|---|---|---|
+| **#423** | MCP SSE Server: Received request before initialization was complete | 25 |
+| **#1401** | ClientSession Error Handling | 25* |
+| **#262** | cannot get response from `await session.call_tool()` | 16 |
+| **#2416** | Bug: AssertionError: Request already responded to — cancellation race in v1.27.0 | 15 |
+| **#883** | AssertionError: Unexpected message while using middlewares | 15 |
+
+\*The list view says 25 comments for #1401 but the issue's own page says 24. It ranks second either way.
+
+**What users are reporting**
+
+- **#423:** After an SSE server restarts or redeploys, clients like Cursor, VS Code and mcp-remote keep using their old session ID without starting a new handshake, so every request crashes the server with this error. Recent comments also mention proxies that send an extra startup message and a rare timing bug where a request arrives just as the handshake finishes.
+- **#1401:** When a streamable HTTP read times out during a long tool call, the default client message handler silently drops the error, so `call_tool()` waits forever. Several people confirmed it's still present on current `main` as of September 2026, and contributors have fixes ready but are waiting for someone to be assigned to the issue.
+- **#262:** On the client side, `call_tool()` sometimes never returns even though the server logs show the response was sent. It happens mostly with stdio and long-running calls, or when the session is used from a different thread or task than the one that created it, and the latest workarounds keep the session in a single task and add `asyncio.wait_for` timeouts.
+- **#2416:** If a client cancels a request after the tool has finished but before the response goes out, a bare `assert` fires and crashes the whole server, killing the session. With synchronous tools this happens every time, not just by bad timing. The latest comment (October 2026) says it's fixed in 2.3.0 but still breaks every time on 1.30.0, the newest v1 release.
+- **#883:** Mounting the SSE app behind a Starlette `BaseHTTPMiddleware` crashes when a client disconnects. The SSE endpoint sends a second response start, which a maintainer confirmed is this SDK's bug and not Starlette's, and said it "need[s] to solve this for V2"; both fix PRs were closed without merging.
+
+**Which I'd fix first:** #1401, because it's a P1 that's still unfixed on the current `main` branch, and it makes client calls hang forever with no error, which commenters say has used up resources in production. The fix is already understood and written: re-raise the error in the default handler and fail any waiting requests. It just needs a maintainer to assign the issue and review a PR. (If v1.x is still getting fixes, #2416 is a close second: it's a two-line guard that stops a server crash.) 
+
+[mcp-full] 42.6s · 1 API calls · 11 tool calls · in 146,801 (+0 cached) · out 3,650 · $0.660 · stop=end_turn

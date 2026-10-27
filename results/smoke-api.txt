@@ -1,0 +1,13 @@
+Here are the 5 open issues labeled "bug" in modelcontextprotocol/python-sdk with the most comments. I checked that none are pull requests.
+
+| # | Title | Comments | What users are reporting |
+|---|---|---|---|
+| **423** | MCP SSE Server: Received request before initialization was complete | 25 | After a server restart or redeploy, clients keep sending requests on the old SSE session, which fail with "Received request before initialization was complete." Recent comments add that proxies which send their own `initialize` (e.g. supergateway) cause the same error. |
+| **1401** | ClientSession Error Handling | 24 | Transport errors, such as an `sse_read_timeout` shorter than a tool's run time, are silently dropped by `ClientSession`'s default `message_handler` and pending requests are never failed, so `call_tool` hangs instead of raising an error. A recent comment confirms this is still true on current `main`. |
+| **262** | cannot get response from await session.call_tool() | 16 | `call_tool()` never returns even though the server finished the tool and sent the result, mostly with long-running tools over stdio or streamable HTTP. Commenters trace it to `BaseSession` receive-loop cleanup leaving the pending request waiting forever. |
+| **883** | AssertionError: Unexpected message while using middlewares | 15 | With the SSE server mounted in Starlette/FastAPI and middleware in place, a client disconnecting causes a double-send ASGI error ("Expected 'http.response.body' but got 'http.response.start'"). Someone confirmed it on v1.27.2, a fix was proposed in #2016, and a maintainer said it must be solved for v2. |
+| **2416** | Bug: AssertionError: Request already responded to — cancellation race in v1.27.0 | 15 | If a cancellation arrives after a tool finishes but before the server sends its response, the server crashes with `AssertionError: Request already responded to`. The latest tests show it still fails on 1.30.0, the latest v1 release, but no longer happens on 2.3.0, so this now only affects v1. |
+
+**I'd fix #1401 first.** It's marked P1, and its silent hangs are probably a root cause behind other reports like #262. It's also the cheapest to close: a recent comment confirms the gaps on current `main`, and a contributor says they have a branch with a fix and 4 regression tests ready, waiting only for a maintainer to assign the issue. 
+
+[api] 22.9s · 3 API calls · 11 tool calls · in 11,792 (+0 cached) · out 1,816 · $0.083 · stop=end_turn
